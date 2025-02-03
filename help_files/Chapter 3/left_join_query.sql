@@ -27,18 +27,29 @@ GROUP BY
   p.ProductKey,
   p.EnglishProductName;
 
--- ONE to MANY LEFT JOIN
+-- ONE to MANY LEFT JOIN 
+-- Using CTE to get Total Sales of Products
+-- And using windowing technique
+WITH Sales_Table AS
+  (SELECT 
+    p.ProductKey,
+    p.EnglishProductName ProductName,
+    s.OrderDate,
+    s.OrderQuantity,
+    COALESCE(s.SalesAmount, 0) AS SalesAmount
+  FROM
+    DimProduct p
+  LEFT JOIN FactInternetSales s
+  ON p.ProductKey = s.ProductKey)
 SELECT 
-  p.ProductKey,
-  p.EnglishProductName,
-  s.OrderDate,
-  s.OrderQuantity,
-  s.SalesAmount
-FROM
-  DimProduct p
-LEFT JOIN FactInternetSales s
-ON p.ProductKey = s.ProductKey
-ORDER BY SalesAmount DESC;
+  ProductKey,
+  ProductName,
+  SUBSTRING(OrderDate, 0,11) AS OrderDate,
+  SalesAmount,
+  SUM(SalesAmount) over (partition by ProductKey) Total_Product_Sales
+FROM Sales_Table
+WHERE SalesAmount > 0
+ORDER BY OrderDate;
 
 -- Complex Query Joins
 SELECT 
